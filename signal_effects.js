@@ -1,37 +1,65 @@
-// ========================================
-// FLARES FX
-// Fikcyjne efekty wizualne Sandboxels
-// ========================================
+/*
+=========================================================
+ FLARES FX
+ Sandboxels 1.12
+ Czysto wizualne efekty dymu i światła
+=========================================================
+*/
 
-const flareColors = {
-    red: "#ff3030",
-    orange: "#ff8a20",
-    yellow: "#ffe34a",
-    green: "#35e66b",
-    blue: "#389cff",
-    purple: "#a45cff",
-    pink: "#ff5fbd",
-    cyan: "#35e5e5",
-    white: "#eeeeee"
-};
+(function () {
 
-// ----------------------------------------
-// KOLOROWY DYM
-// ----------------------------------------
+    // ---------------------------------------------------
+    // USTAWIENIA
+    // ---------------------------------------------------
 
-function makeColoredSmoke(name, displayName, color) {
-    elements[name] = {
-        name: displayName,
-        color: color,
+    const FLARE_CATEGORY = "flares";
+
+    const COLORS = {
+        red: "#ff3030",
+        orange: "#ff8a20",
+        yellow: "#ffe34a",
+        green: "#35e66b",
+        blue: "#389cff",
+        purple: "#a45cff",
+        pink: "#ff5fbd",
+        cyan: "#35e5e5",
+        white: "#eeeeee"
+    };
+
+
+    // ---------------------------------------------------
+    // POMOCNICZA FUNKCJA
+    // ---------------------------------------------------
+
+    function randomBetween(min, max) {
+        return min + Math.random() * (max - min);
+    }
+
+
+    // ---------------------------------------------------
+    // NEUTRALNY DYM
+    // ---------------------------------------------------
+
+    elements.flare_neutral_smoke = {
+
+        color: "#b5b5b5",
+
         behavior: behaviors.GAS,
-        category: "flares",
-        state: "gas",
-        density: 0.7,
-        desc: "Fikcyjny kolorowy efekt dymny.",
 
-        tick: function(pixel) {
+        state: "gas",
+
+        density: 0.3,
+
+        category: FLARE_CATEGORY,
+
+        hidden: true,
+
+        desc: "Neutralny dym efektu Flare.",
+
+        tick: function (pixel) {
+
             if (pixel.life === undefined) {
-                pixel.life = 100 + Math.random() * 80;
+                pixel.life = randomBetween(80, 150);
             }
 
             pixel.life--;
@@ -41,204 +69,283 @@ function makeColoredSmoke(name, displayName, color) {
                 return;
             }
 
-            pixel.color = color;
+            if (Math.random() < 0.08) {
+                pixel.color = "#b5b5b5";
+            }
         }
     };
-}
 
-// ----------------------------------------
-// ŚWIATŁO + BEZBARWNY DYM
-// ----------------------------------------
 
-function makeGlow(name, displayName, color) {
-    elements[name] = {
-        name: displayName,
-        color: color,
-        behavior: behaviors.WALL,
-        category: "flares",
-        state: "solid",
-        desc: "Fikcyjny kolorowy efekt świetlny.",
+    // ---------------------------------------------------
+    // KOLOROWY DYM
+    // ---------------------------------------------------
 
-        tick: function(pixel) {
+    function createSmoke(name, label, color) {
 
-            if (pixel.life === undefined) {
-                pixel.life = 80 + Math.random() * 80;
-            }
+        elements[name] = {
 
-            pixel.life--;
+            color: color,
 
-            if (pixel.life <= 0) {
-                deletePixel(pixel.x, pixel.y);
-                return;
-            }
+            behavior: behaviors.GAS,
 
-            // lekka zmiana koloru daje efekt migotania
-            if (Math.random() < 0.15) {
+            state: "gas",
+
+            density: 0.25,
+
+            category: FLARE_CATEGORY,
+
+            desc: label + " — kolorowy efekt dymny.",
+
+            tick: function (pixel) {
+
+                if (pixel.life === undefined) {
+                    pixel.life = randomBetween(100, 180);
+                }
+
+                pixel.life--;
+
+                if (pixel.life <= 0) {
+                    deletePixel(pixel.x, pixel.y);
+                    return;
+                }
+
                 pixel.color = color;
             }
+        };
+    }
 
-            // bezbarwna chmura efektu
-            if (Math.random() < 0.20) {
 
-                let x = pixel.x + Math.floor(Math.random() * 5) - 2;
-                let y = pixel.y - 1;
+    // ---------------------------------------------------
+    // KOLOROWE ŚWIATŁO
+    // ---------------------------------------------------
 
-                if (!outOfBounds(x, y) && isEmpty(x, y)) {
+    function createGlow(name, label, color) {
 
-                    createPixel("flare_neutral_smoke", x, y);
+        elements[name] = {
 
-                    let smoke = pixelMap[x][y];
+            color: color,
 
-                    if (smoke) {
-                        smoke.life = 80 + Math.random() * 80;
+            behavior: behaviors.WALL,
+
+            state: "solid",
+
+            density: 900,
+
+            category: FLARE_CATEGORY,
+
+            desc: label + " — kolorowy efekt świetlny.",
+
+            tick: function (pixel) {
+
+                if (pixel.life === undefined) {
+                    pixel.life = randomBetween(100, 180);
+                }
+
+                pixel.life--;
+
+                if (pixel.life <= 0) {
+                    deletePixel(pixel.x, pixel.y);
+                    return;
+                }
+
+                // Delikatne migotanie
+                if (Math.random() < 0.15) {
+                    pixel.color = color;
+                }
+
+                // Tworzenie neutralnego dymu
+                if (Math.random() < 0.12) {
+
+                    const x =
+                        pixel.x +
+                        Math.floor(Math.random() * 5) -
+                        2;
+
+                    const y = pixel.y - 1;
+
+                    if (
+                        !outOfBounds(x, y) &&
+                        isEmpty(x, y)
+                    ) {
+
+                        createPixel(
+                            "flare_neutral_smoke",
+                            x,
+                            y
+                        );
+
+                        const smoke = pixelMap[x][y];
+
+                        if (smoke) {
+                            smoke.life =
+                                randomBetween(70, 130);
+                        }
                     }
                 }
             }
-        }
-    };
-}
-
-// ----------------------------------------
-// BEZBARWNY DYM
-// ----------------------------------------
-
-elements.flare_neutral_smoke = {
-    name: "Neutral Smoke",
-    color: "#b8b8b8",
-    behavior: behaviors.GAS,
-    category: "flares",
-    state: "gas",
-    density: 0.5,
-    hidden: true,
-
-    tick: function(pixel) {
-
-        if (pixel.life === undefined) {
-            pixel.life = 100 + Math.random() * 80;
-        }
-
-        pixel.life--;
-
-        if (pixel.life <= 0) {
-            deletePixel(pixel.x, pixel.y);
-        }
+        };
     }
-};
 
 
-// ========================================
-// KOLOROWE EFEKTY DYMNE
-// ========================================
+    // ---------------------------------------------------
+    // CZERWONY
+    // ---------------------------------------------------
 
-makeColoredSmoke(
-    "flare_red_smoke",
-    "Red Smoke",
-    flareColors.red
-);
+    createSmoke(
+        "flare_red_smoke",
+        "Red Smoke",
+        COLORS.red
+    );
 
-makeColoredSmoke(
-    "flare_orange_smoke",
-    "Orange Smoke",
-    flareColors.orange
-);
-
-makeColoredSmoke(
-    "flare_yellow_smoke",
-    "Yellow Smoke",
-    flareColors.yellow
-);
-
-makeColoredSmoke(
-    "flare_green_smoke",
-    "Green Smoke",
-    flareColors.green
-);
-
-makeColoredSmoke(
-    "flare_blue_smoke",
-    "Blue Smoke",
-    flareColors.blue
-);
-
-makeColoredSmoke(
-    "flare_purple_smoke",
-    "Purple Smoke",
-    flareColors.purple
-);
-
-makeColoredSmoke(
-    "flare_pink_smoke",
-    "Pink Smoke",
-    flareColors.pink
-);
-
-makeColoredSmoke(
-    "flare_cyan_smoke",
-    "Cyan Smoke",
-    flareColors.cyan
-);
-
-makeColoredSmoke(
-    "flare_white_smoke",
-    "White Smoke",
-    flareColors.white
-);
+    createGlow(
+        "flare_red_glow",
+        "Red Glow",
+        COLORS.red
+    );
 
 
-// ========================================
-// KOLOROWE ŚWIATŁO + NEUTRALNY DYM
-// ========================================
+    // ---------------------------------------------------
+    // POMARAŃCZOWY
+    // ---------------------------------------------------
 
-makeGlow(
-    "flare_red_glow",
-    "Red Glow",
-    flareColors.red
-);
+    createSmoke(
+        "flare_orange_smoke",
+        "Orange Smoke",
+        COLORS.orange
+    );
 
-makeGlow(
-    "flare_orange_glow",
-    "Orange Glow",
-    flareColors.orange
-);
+    createGlow(
+        "flare_orange_glow",
+        "Orange Glow",
+        COLORS.orange
+    );
 
-makeGlow(
-    "flare_yellow_glow",
-    "Yellow Glow",
-    flareColors.yellow
-);
 
-makeGlow(
-    "flare_green_glow",
-    "Green Glow",
-    flareColors.green
-);
+    // ---------------------------------------------------
+    // ŻÓŁTY
+    // ---------------------------------------------------
 
-makeGlow(
-    "flare_blue_glow",
-    "Blue Glow",
-    flareColors.blue
-);
+    createSmoke(
+        "flare_yellow_smoke",
+        "Yellow Smoke",
+        COLORS.yellow
+    );
 
-makeGlow(
-    "flare_purple_glow",
-    "Purple Glow",
-    flareColors.purple
-);
+    createGlow(
+        "flare_yellow_glow",
+        "Yellow Glow",
+        COLORS.yellow
+    );
 
-makeGlow(
-    "flare_pink_glow",
-    "Pink Glow",
-    flareColors.pink
-);
 
-makeGlow(
-    "flare_cyan_glow",
-    "Cyan Glow",
-    flareColors.cyan
-);
+    // ---------------------------------------------------
+    // ZIELONY
+    // ---------------------------------------------------
 
-makeGlow(
-    "flare_white_glow",
-    "White Glow",
-    flareColors.white
-);
+    createSmoke(
+        "flare_green_smoke",
+        "Green Smoke",
+        COLORS.green
+    );
+
+    createGlow(
+        "flare_green_glow",
+        "Green Glow",
+        COLORS.green
+    );
+
+
+    // ---------------------------------------------------
+    // NIEBIESKI
+    // ---------------------------------------------------
+
+    createSmoke(
+        "flare_blue_smoke",
+        "Blue Smoke",
+        COLORS.blue
+    );
+
+    createGlow(
+        "flare_blue_glow",
+        "Blue Glow",
+        COLORS.blue
+    );
+
+
+    // ---------------------------------------------------
+    // FIOLETOWY
+    // ---------------------------------------------------
+
+    createSmoke(
+        "flare_purple_smoke",
+        "Purple Smoke",
+        COLORS.purple
+    );
+
+    createGlow(
+        "flare_purple_glow",
+        "Purple Glow",
+        COLORS.purple
+    );
+
+
+    // ---------------------------------------------------
+    // RÓŻOWY
+    // ---------------------------------------------------
+
+    createSmoke(
+        "flare_pink_smoke",
+        "Pink Smoke",
+        COLORS.pink
+    );
+
+    createGlow(
+        "flare_pink_glow",
+        "Pink Glow",
+        COLORS.pink
+    );
+
+
+    // ---------------------------------------------------
+    // TURKUSOWY
+    // ---------------------------------------------------
+
+    createSmoke(
+        "flare_cyan_smoke",
+        "Cyan Smoke",
+        COLORS.cyan
+    );
+
+    createGlow(
+        "flare_cyan_glow",
+        "Cyan Glow",
+        COLORS.cyan
+    );
+
+
+    // ---------------------------------------------------
+    // BIAŁY
+    // ---------------------------------------------------
+
+    createSmoke(
+        "flare_white_smoke",
+        "White Smoke",
+        COLORS.white
+    );
+
+    createGlow(
+        "flare_white_glow",
+        "White Glow",
+        COLORS.white
+    );
+
+
+    // ---------------------------------------------------
+    // INFORMACJA W KONSOLI
+    // ---------------------------------------------------
+
+    console.log(
+        "Flares FX loaded successfully."
+    );
+
+})();
