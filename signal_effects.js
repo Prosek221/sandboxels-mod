@@ -1,229 +1,244 @@
-/*
-  SIGNAL EFFECTS
-  Fikcyjne efekty wizualne do Sandboxels
-*/
+// ========================================
+// FLARES FX
+// Fikcyjne efekty wizualne Sandboxels
+// ========================================
 
-const signalColors = {
+const flareColors = {
     red: "#ff3030",
     orange: "#ff8a20",
-    yellow: "#ffe44a",
+    yellow: "#ffe34a",
     green: "#35e66b",
     blue: "#389cff",
     purple: "#a45cff",
     pink: "#ff5fbd",
     cyan: "#35e5e5",
-    white: "#eeeeee",
-    black: "#252525"
+    white: "#eeeeee"
 };
 
-// -----------------------------
-// DYM
-// -----------------------------
+// ----------------------------------------
+// KOLOROWY DYM
+// ----------------------------------------
 
-elements.signal_smoke = {
-    color: "#aaaaaa",
-    state: "gas",
-    density: 0.15,
+function makeColoredSmoke(name, displayName, color) {
+    elements[name] = {
+        name: displayName,
+        color: color,
+        behavior: behaviors.GAS,
+        category: "flares",
+        state: "gas",
+        density: 0.7,
+        desc: "Fikcyjny kolorowy efekt dymny.",
+
+        tick: function(pixel) {
+            if (pixel.life === undefined) {
+                pixel.life = 100 + Math.random() * 80;
+            }
+
+            pixel.life--;
+
+            if (pixel.life <= 0) {
+                deletePixel(pixel.x, pixel.y);
+                return;
+            }
+
+            pixel.color = color;
+        }
+    };
+}
+
+// ----------------------------------------
+// ŚWIATŁO + BEZBARWNY DYM
+// ----------------------------------------
+
+function makeGlow(name, displayName, color) {
+    elements[name] = {
+        name: displayName,
+        color: color,
+        behavior: behaviors.WALL,
+        category: "flares",
+        state: "solid",
+        desc: "Fikcyjny kolorowy efekt świetlny.",
+
+        tick: function(pixel) {
+
+            if (pixel.life === undefined) {
+                pixel.life = 80 + Math.random() * 80;
+            }
+
+            pixel.life--;
+
+            if (pixel.life <= 0) {
+                deletePixel(pixel.x, pixel.y);
+                return;
+            }
+
+            // lekka zmiana koloru daje efekt migotania
+            if (Math.random() < 0.15) {
+                pixel.color = color;
+            }
+
+            // bezbarwna chmura efektu
+            if (Math.random() < 0.20) {
+
+                let x = pixel.x + Math.floor(Math.random() * 5) - 2;
+                let y = pixel.y - 1;
+
+                if (!outOfBounds(x, y) && isEmpty(x, y)) {
+
+                    createPixel("flare_neutral_smoke", x, y);
+
+                    let smoke = pixelMap[x][y];
+
+                    if (smoke) {
+                        smoke.life = 80 + Math.random() * 80;
+                    }
+                }
+            }
+        }
+    };
+}
+
+// ----------------------------------------
+// BEZBARWNY DYM
+// ----------------------------------------
+
+elements.flare_neutral_smoke = {
+    name: "Neutral Smoke",
+    color: "#b8b8b8",
     behavior: behaviors.GAS,
+    category: "flares",
+    state: "gas",
+    density: 0.5,
     hidden: true,
 
     tick: function(pixel) {
+
         if (pixel.life === undefined) {
-            pixel.life = 160 + Math.random() * 100;
+            pixel.life = 100 + Math.random() * 80;
         }
 
         pixel.life--;
 
         if (pixel.life <= 0) {
             deletePixel(pixel.x, pixel.y);
-            return;
-        }
-
-        if (Math.random() < 0.08) {
-            pixel.color = pixel.color || "#aaaaaa";
         }
     }
 };
 
 
-// -----------------------------
-// FUNKCJA TWORZĄCA DYM
-// -----------------------------
+// ========================================
+// KOLOROWE EFEKTY DYMNE
+// ========================================
 
-function signalSmoke(pixel, color, amount) {
+makeColoredSmoke(
+    "flare_red_smoke",
+    "Red Smoke",
+    flareColors.red
+);
 
-    for (let i = 0; i < amount; i++) {
+makeColoredSmoke(
+    "flare_orange_smoke",
+    "Orange Smoke",
+    flareColors.orange
+);
 
-        let x = pixel.x + Math.floor(Math.random() * 5) - 2;
-        let y = pixel.y + Math.floor(Math.random() * 3) - 2;
+makeColoredSmoke(
+    "flare_yellow_smoke",
+    "Yellow Smoke",
+    flareColors.yellow
+);
 
-        if (outOfBounds(x, y)) continue;
-        if (!isEmpty(x, y)) continue;
+makeColoredSmoke(
+    "flare_green_smoke",
+    "Green Smoke",
+    flareColors.green
+);
 
-        createPixel("signal_smoke", x, y);
+makeColoredSmoke(
+    "flare_blue_smoke",
+    "Blue Smoke",
+    flareColors.blue
+);
 
-        let smoke = pixelMap[x][y];
+makeColoredSmoke(
+    "flare_purple_smoke",
+    "Purple Smoke",
+    flareColors.purple
+);
 
-        if (smoke) {
-            smoke.color = color;
-            smoke.life = 180 + Math.random() * 120;
-        }
-    }
-}
+makeColoredSmoke(
+    "flare_pink_smoke",
+    "Pink Smoke",
+    flareColors.pink
+);
 
+makeColoredSmoke(
+    "flare_cyan_smoke",
+    "Cyan Smoke",
+    flareColors.cyan
+);
 
-// -----------------------------
-// FUNKCJA EFEKTU
-// -----------------------------
-
-function signalEffect(pixel, color, coloredSmoke) {
-
-    if (!pixel.active) {
-        pixel.active = true;
-        pixel.effectLife = 180;
-    }
-
-    pixel.effectLife--;
-
-    // Dym
-    if (Math.random() < 0.65) {
-
-        if (coloredSmoke) {
-            signalSmoke(pixel, color, 3);
-        } else {
-            signalSmoke(pixel, "#bdbdbd", 3);
-        }
-    }
-
-    // Kolorowa poświata
-    if (Math.random() < 0.25) {
-        pixel.color = color;
-    }
-
-    // Koniec efektu
-    if (pixel.effectLife <= 0) {
-        deletePixel(pixel.x, pixel.y);
-    }
-}
+makeColoredSmoke(
+    "flare_white_smoke",
+    "White Smoke",
+    flareColors.white
+);
 
 
-// -----------------------------
-// TWORZENIE ELEMENTÓW
-// -----------------------------
+// ========================================
+// KOLOROWE ŚWIATŁO + NEUTRALNY DYM
+// ========================================
 
-function createSignalSmoke(name, color) {
+makeGlow(
+    "flare_red_glow",
+    "Red Glow",
+    flareColors.red
+);
 
-    elements[name] = {
-        color: color,
-        category: "special",
-        state: "solid",
-        density: 900,
+makeGlow(
+    "flare_orange_glow",
+    "Orange Glow",
+    flareColors.orange
+);
 
-        tick: function(pixel) {
+makeGlow(
+    "flare_yellow_glow",
+    "Yellow Glow",
+    flareColors.yellow
+);
 
-            // W Sandboxels element aktywuje się
-            // po kontakcie z ogniem lub prądem.
-            let activated = false;
+makeGlow(
+    "flare_green_glow",
+    "Green Glow",
+    flareColors.green
+);
 
-            if (pixel.charge) {
-                activated = true;
-            }
+makeGlow(
+    "flare_blue_glow",
+    "Blue Glow",
+    flareColors.blue
+);
 
-            // Sprawdzanie sąsiadujących pól
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
+makeGlow(
+    "flare_purple_glow",
+    "Purple Glow",
+    flareColors.purple
+);
 
-                    let x = pixel.x + dx;
-                    let y = pixel.y + dy;
+makeGlow(
+    "flare_pink_glow",
+    "Pink Glow",
+    flareColors.pink
+);
 
-                    if (outOfBounds(x, y)) continue;
+makeGlow(
+    "flare_cyan_glow",
+    "Cyan Glow",
+    flareColors.cyan
+);
 
-                    let other = pixelMap[x][y];
-
-                    if (!other) continue;
-
-                    if (other.element === "fire") {
-                        activated = true;
-                    }
-                }
-            }
-
-            if (activated) {
-                signalEffect(pixel, color, true);
-            }
-        }
-    };
-}
-
-
-function createSignalGlow(name, color) {
-
-    elements[name] = {
-        color: color,
-        category: "special",
-        state: "solid",
-        density: 900,
-
-        tick: function(pixel) {
-
-            let activated = false;
-
-            if (pixel.charge) {
-                activated = true;
-            }
-
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
-
-                    let x = pixel.x + dx;
-                    let y = pixel.y + dy;
-
-                    if (outOfBounds(x, y)) continue;
-
-                    let other = pixelMap[x][y];
-
-                    if (!other) continue;
-
-                    if (other.element === "fire") {
-                        activated = true;
-                    }
-                }
-            }
-
-            if (activated) {
-                signalEffect(pixel, color, false);
-            }
-        }
-    };
-}
-
-
-// -----------------------------
-// KOLOROWY DYM
-// -----------------------------
-
-createSignalSmoke("signal_red", signalColors.red);
-createSignalSmoke("signal_orange", signalColors.orange);
-createSignalSmoke("signal_yellow", signalColors.yellow);
-createSignalSmoke("signal_green", signalColors.green);
-createSignalSmoke("signal_blue", signalColors.blue);
-createSignalSmoke("signal_purple", signalColors.purple);
-createSignalSmoke("signal_pink", signalColors.pink);
-createSignalSmoke("signal_cyan", signalColors.cyan);
-createSignalSmoke("signal_white", signalColors.white);
-createSignalSmoke("signal_black", signalColors.black);
-
-
-// -----------------------------
-// ŚWIATŁO + BEZBARWNY DYM
-// -----------------------------
-
-createSignalGlow("signal_glow_red", signalColors.red);
-createSignalGlow("signal_glow_orange", signalColors.orange);
-createSignalGlow("signal_glow_yellow", signalColors.yellow);
-createSignalGlow("signal_glow_green", signalColors.green);
-createSignalGlow("signal_glow_blue", signalColors.blue);
-createSignalGlow("signal_glow_purple", signalColors.purple);
-createSignalGlow("signal_glow_pink", signalColors.pink);
-createSignalGlow("signal_glow_cyan", signalColors.cyan);
-createSignalGlow("signal_glow_white", signalColors.white);
+makeGlow(
+    "flare_white_glow",
+    "White Glow",
+    flareColors.white
+);
