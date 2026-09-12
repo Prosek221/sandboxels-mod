@@ -10,10 +10,10 @@
 
  Mechanika:
    - po postawieniu są nieruchome
-   - po osiągnięciu wysokiej temperatury aktywują się
+   - aktywują się po osiągnięciu 100°C
    - działają około 120 sekund
-   - Smoke = kolorowy dym + światło
-   - Glow  = kolorowe światło + bezbarwny dym
+   - Smoke = kolorowy dym + świecenie
+   - Glow  = mocne kolorowe światło + bezbarwny dym
 ====================================================
 */
 
@@ -23,6 +23,7 @@
 
     const ACTIVATION_TEMP = 100;
 
+    // 2400 ticków ≈ 120 sekund przy 20 TPS
     const ACTIVE_TIME = 2400;
 
     const COLORS = {
@@ -68,6 +69,12 @@
 
             if (pixel.life <= 0) {
                 deletePixel(pixel.x, pixel.y);
+                return;
+            }
+
+            // Delikatna zmiana przezroczystości
+            if (pixel.life < 35) {
+                pixel.alpha = pixel.life / 35;
             }
         }
     };
@@ -107,6 +114,8 @@
 
                 if (!pixel.active) {
 
+                    pixel.glow = false;
+
                     if (pixel.temp >= ACTIVATION_TEMP) {
 
                         pixel.active = true;
@@ -141,15 +150,27 @@
 
                 /*
                 ----------------------------------------
+                LEKKIE ŚWIATŁO
+                ----------------------------------------
+                */
+
+                pixel.glow = true;
+
+                pixel.color = color;
+
+
+                /*
+                ----------------------------------------
                 KOLOROWY DYM
                 ----------------------------------------
                 */
 
-                if (Math.random() < 0.8) {
+                if (Math.random() < 0.82) {
 
                     const x =
                         pixel.x +
-                        Math.floor(Math.random() * 5) - 2;
+                        Math.floor(Math.random() * 5) -
+                        2;
 
                     const y =
                         pixel.y - 1;
@@ -178,15 +199,6 @@
                         }
                     }
                 }
-
-
-                /*
-                ----------------------------------------
-                LEKKA POŚWIATA
-                ----------------------------------------
-                */
-
-                pixel.color = color;
             }
         };
     }
@@ -229,6 +241,18 @@
                     pixel.x,
                     pixel.y
                 );
+
+                return;
+            }
+
+            /*
+            Dym powoli zanika
+            */
+
+            if (pixel.life < 30) {
+
+                pixel.alpha =
+                    pixel.life / 30;
             }
         }
     };
@@ -256,7 +280,7 @@
 
             category: CATEGORY,
 
-            desc: "Fikcyjny efekt światła i neutralnego dymu.",
+            desc: "Fikcyjny efekt mocnego kolorowego światła i neutralnego dymu.",
 
             tick: function (pixel) {
 
@@ -267,6 +291,8 @@
                 */
 
                 if (!pixel.active) {
+
+                    pixel.glow = false;
 
                     if (pixel.temp >= ACTIVATION_TEMP) {
 
@@ -302,11 +328,27 @@
 
                 /*
                 ----------------------------------------
-                KOLOROWA POŚWIATA
+                MOCNE ŚWIATŁO
                 ----------------------------------------
                 */
 
+                pixel.glow = true;
+
                 pixel.color = color;
+
+
+                /*
+                Migotanie
+                */
+
+                if (Math.random() < 0.08) {
+
+                    pixel.glow = false;
+
+                } else {
+
+                    pixel.glow = true;
+                }
 
 
                 /*
@@ -315,11 +357,12 @@
                 ----------------------------------------
                 */
 
-                if (Math.random() < 0.65) {
+                if (Math.random() < 0.70) {
 
                     const x =
                         pixel.x +
-                        Math.floor(Math.random() * 5) - 2;
+                        Math.floor(Math.random() * 5) -
+                        2;
 
                     const y =
                         pixel.y - 1;
@@ -340,6 +383,9 @@
 
                         if (smoke) {
 
+                            smoke.color =
+                                "#b5b5b5";
+
                             smoke.life =
                                 100 +
                                 Math.random() * 100;
@@ -353,7 +399,7 @@
 
     /*
     ====================================================
-    TWORZENIE ELEMENTÓW
+    KOLOROWY DYM
     ====================================================
     */
 
@@ -472,6 +518,12 @@
         COLORS.white
     );
 
+
+    /*
+    ====================================================
+    KONIEC
+    ====================================================
+    */
 
     console.log(
         "Flares FX loaded successfully!"
